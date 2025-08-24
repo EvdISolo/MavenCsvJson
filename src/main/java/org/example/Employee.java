@@ -1,6 +1,6 @@
 package org.example;
 
-class Employee {
+public class Employee {
     public long id;
     public String firstName;
     public String lastName;

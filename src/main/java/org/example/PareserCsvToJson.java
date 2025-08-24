@@ -15,62 +15,37 @@ import java.lang.reflect.Type;
 import java.util.List;
 
 public class PareserCsvToJson {
+    static List<Employee> parseCSV(String[] columnMapping, String fileName) {
+        FileReader fileReader = null;
+        try {
 
+            fileReader = new FileReader(fileName);
 
-        static final String fileName = "data.csv";
-        static final String[] columnMapping = {"id", "firstName", "lastName", "country", "age"};
+        } catch (IOException e) {
+            System.out.println(e);
+            return null;
+        } finally {
 
-        static void writeString(String json) {
-            try (FileWriter file = new
-                    FileWriter("data.json")) {
-                file.write(json);
-                file.flush();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            try {
 
-        }
+                if (fileReader != null) {
 
-        private static String listToJson(List<Employee> list) {
-
-            GsonBuilder builder = new GsonBuilder();
-            Gson gson = builder.create();
-            Type listType = new TypeToken<List<Employee>>() {
-            }.getType();
-            return gson.toJson(list, listType);
-        }
-
-        static List<Employee> parseCSV(String[] columnMapping, String fileName) {
-
-
-            try (CSVReader reader = new CSVReader(new FileReader(fileName))) {
-
-                ColumnPositionMappingStrategy<Employee> strategy = new ColumnPositionMappingStrategy<>();
-                strategy.setType(Employee.class);
-                strategy.setColumnMapping(columnMapping);
-
-                CsvToBean<Employee> csv = new CsvToBeanBuilder<Employee>(reader)
-                        .withMappingStrategy(strategy)
-                        .build();
-                return csv.parse();
+                    fileReader.close();
+                }
 
             } catch (IOException e) {
-                System.out.println(e);
-                return null;
+                throw new RuntimeException(e);
             }
         }
 
-        public static void main(String[] args) {
+        CSVReader csvReader = new CSVReader(fileReader);
+        ColumnPositionMappingStrategy<Employee> strategy = new ColumnPositionMappingStrategy<>();
+        strategy.setType(Employee.class);
+        strategy.setColumnMapping(columnMapping);
 
-            List<Employee> list = parseCSV(columnMapping, fileName);
-
-            assert list != null;
-            list.forEach((value) -> System.out.println(value.toString()));
-
-            writeString(listToJson(list));
-
-        }
-
-
+        CsvToBean<Employee> csv = new CsvToBeanBuilder<Employee>(csvReader)
+                .withMappingStrategy(strategy)
+                .build();
+        return csv.parse();
     }
-
+}

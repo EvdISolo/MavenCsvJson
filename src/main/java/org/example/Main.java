@@ -1,25 +1,25 @@
 package org.example;
 
-import com.opencsv.*;
-import com.opencsv.bean.*;
-import com.opencsv.exceptions.CsvDataTypeMismatchException;
-import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
-import com.opencsv.exceptions.CsvValidationException;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVWriter;
+import com.opencsv.bean.ColumnPositionMappingStrategy;
+import com.opencsv.bean.CsvToBean;
+import com.opencsv.bean.CsvToBeanBuilder;
+import org.example.Employee;
 
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Writer;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
-import static org.example.PareserCsvToJson.parseCSV;
+class Main {
 
-
-public class Main {
-    public static void main(String[] args) throws IOException, CsvRequiredFieldEmptyException, CsvDataTypeMismatchException {
+    public static void main(String[] args) {
         String[] employee = "1,John,Smith,USA,25".split(",");
         String[] employee2 = "2, Ivan,Petrov,RU,23".split(",");
         List<String[]> employees = new ArrayList<>();
@@ -27,9 +27,8 @@ public class Main {
         employees.add(employee2);
 
 
-        String[] columnMapping = {"id", "firstName", "lastName", "country", "age"};
-        String fileName = "data.csv";
-        List<Employee> list = parseCSV(columnMapping, fileName);
+
+
 
 
 // Создание файла
@@ -41,87 +40,71 @@ public class Main {
             ex.printStackTrace();
         }
 
-        // parsing deserialization
 
-//        List<Employee> data = null;
-//        try (CSVReader csvReader = new CSVReader(new FileReader("data.csv"))) {
-//            ColumnPositionMappingStrategy<Employee> strategy
-//                    = new ColumnPositionMappingStrategy<>();
-//            strategy.setType(Employee.class);
-//            strategy.setColumnMapping("id", "firstName", "lastName", "country", "age");
-//            CsvToBean<Employee> csv = new CsvToBeanBuilder<Employee>(csvReader)
-//                    .withMappingStrategy(strategy)
-//                    .build();
-//            data = csv.parse();
-//            data.forEach(System.out::println);
-//        } catch (IOException ex) {
-//            ex.printStackTrace();
-
-//        }
-
-
-            // serialization                        Cериализация
-
-//        List<Employee> staff = new ArrayList<>();
-//        staff.add(new Employee(1, "Nikita", "Petrov", "RU", 23));
-//        staff.add(new Employee(2, "Ivan", "Ivanov", "RU", 25));
-//       ColumnPositionMappingStrategy<Employee> strategy=
-//               new ColumnPositionMappingStrategy<>();
-//       strategy.setType(Employee.class);
-//       strategy.setColumnMapping("id", "firstName", "lastName", "country", "age");
-//       try(Writer writer = new FileWriter("staff_2.csv")){
-//           StatefulBeanToCsv<Employee> sbc=
-//                   new StatefulBeanToCsvBuilder<Employee>(writer)
-//                           .withMappingStrategy(strategy)
-//                           .build();
-//           sbc.write(staff);
-//       }
-//       catch (IOException | CsvRequiredFieldEmptyException|CsvDataTypeMismatchException ex){
-//           ex.printStackTrace();
-//       }
-
-
-//custom separator
-//        CSVParser parser = new CSVParserBuilder()
-//                .withSeparator('|')
-//                .build();
-//
-//       try (CSVReader reader = new CSVReaderBuilder(new FileReader("data.csv"))
-//           .build()) {
-//           String[] nextLine;
-//           while ((nextLine = reader.readNext()) != null) {
-//               System.out.println(Arrays.toString(nextLine));
-//           }
-//       } catch (IOException | CsvValidationException ex) {
-//           ex.printStackTrace();
-//       }
-
-
-            // Чтение файла
-//            try (CSVReader reader = new CSVReader(new FileReader("data.csv"))) {
-//
-//                String[] nextLine;
-//                while ((nextLine = reader.readNext()) != null) {
-//                    System.out.println(Arrays.toString(nextLine));
-//                }
-//            } catch (IOException | CsvValidationException ex) {
-//                ex.printStackTrace();
-//            }
-
+        String[] columnMapping = {"id", "firstName", "lastName", "country", "age"};
+        String fileName = "data.csv";
+        List<Employee> list = parseCSV(columnMapping, fileName);
+        String json = listToJson(list);
+        System.out.println(json);
+        try {
+            writeString(json, "employees.json");
+            System.out.println("JSON записан в файл employees.json");
+        } catch (
+                IOException e) {
+            System.err.println("Ошибка записи в файл: " + e.getMessage());
         }
-
     }
 
+    public static List parseCSV(String[] columnMapping, String nameFile) {
+        FileReader fileReader = null;
+        try {
+            fileReader = new FileReader(nameFile);
+        } catch (IOException ex) {
+            System.out.println(ex.getMessage());
+        } finally {
+            try {
+                if (fileReader != null) {
+                    fileReader.close();
+                }
+            } catch (IOException ex) {
+                System.out.println(ex.getMessage());
+            }
+        }
+        CSVReader csvReader = new CSVReader(fileReader);
+        com.opencsv.bean.ColumnPositionMappingStrategy<Employee> strategyResult = new ColumnPositionMappingStrategy<>();
+        strategyResult.setType(Employee.class);
+        strategyResult.setColumnMapping(columnMapping);
+        CsvToBean<Employee> csvToBean = new CsvToBeanBuilder<Employee>(csvReader).withMappingStrategy(strategyResult).build();
+        List<Employee> list = csvToBean.parse();
+        return list;
+    }
 
+    public static String listToJson(List<Employee> list) {
+        GsonBuilder gsonBuilder = new GsonBuilder();
+        Gson gson = gsonBuilder.create();
+        Type listType = new TypeToken<List<Employee>>() {
+        }.getType();
+        String json = gson.toJson(list, listType);
+        return json;
+    }
 
-
-
-
-
-
-
-
-
-
+    public static void writeString(String json, String filePath) throws IOException {
+        FileWriter writer = null;
+        try {
+            writer = new FileWriter(filePath);
+            writer.write(json);
+        } catch (IOException ex) {
+            System.out.println(ex.getMessage());
+        } finally {
+            try {
+                if (writer != null) {
+                    writer.close();
+                }
+            } catch (IOException ex) {
+                System.out.println(ex.getMessage());
+            }
+        }
+    }
+}
 
 
