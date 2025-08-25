@@ -46,6 +46,10 @@ class Main {
         List<Employee> list = parseCSV(columnMapping, fileName);
         String json = listToJson(list);
         System.out.println(json);
+
+
+
+
         try {
             writeString(json, "employees.json");
             System.out.println("JSON записан в файл employees.json");
@@ -56,28 +60,39 @@ class Main {
     }
 
     public static List parseCSV(String[] columnMapping, String nameFile) {
+
         FileReader fileReader = null;
+
+        CSVReader csvReader = null;
+
+        List<Employee> list = new ArrayList<>();
+
         try {
             fileReader = new FileReader(nameFile);
+
+            csvReader = new CSVReader(fileReader);
+            com.opencsv.bean.ColumnPositionMappingStrategy<Employee> strategyResult = new ColumnPositionMappingStrategy<>();
+            strategyResult.setType(Employee.class);
+            strategyResult.setColumnMapping(columnMapping);
+            CsvToBean<Employee> csvToBean = new CsvToBeanBuilder<Employee>(csvReader).withMappingStrategy(strategyResult).build();
+            list = csvToBean.parse();
+            return list;
         } catch (IOException ex) {
             System.out.println(ex.getMessage());
-        } finally {
-            try {
-                if (fileReader != null) {
-                    fileReader.close();
+        }
+        finally {
+            try{
+                if(csvReader !=null){
+                    csvReader.close();
                 }
-            } catch (IOException ex) {
+            }
+            catch (IOException ex){
                 System.out.println(ex.getMessage());
             }
         }
-        CSVReader csvReader = new CSVReader(fileReader);
-        com.opencsv.bean.ColumnPositionMappingStrategy<Employee> strategyResult = new ColumnPositionMappingStrategy<>();
-        strategyResult.setType(Employee.class);
-        strategyResult.setColumnMapping(columnMapping);
-        CsvToBean<Employee> csvToBean = new CsvToBeanBuilder<Employee>(csvReader).withMappingStrategy(strategyResult).build();
-        List<Employee> list = csvToBean.parse();
         return list;
     }
+
 
     public static String listToJson(List<Employee> list) {
         GsonBuilder gsonBuilder = new GsonBuilder();
@@ -104,6 +119,7 @@ class Main {
                 System.out.println(ex.getMessage());
             }
         }
+
     }
 }
 
